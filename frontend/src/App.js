@@ -64,9 +64,17 @@ function App() {
 
       setOcrResult(response.data);
       setExtractedText(response.data.extracted_text);
+      
+      if (!response.data.extracted_text || response.data.extracted_text.trim() === '') {
+        alert('No text was detected in the image. Please try with an image that contains clear text.');
+      }
     } catch (error) {
       console.error('OCR extraction failed:', error);
-      alert('Failed to extract text from image. Please try again.');
+      if (error.response?.status === 400) {
+        alert('Invalid file type. Please upload an image file (JPG, PNG, GIF, BMP).');
+      } else {
+        alert('Failed to extract text from image. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
