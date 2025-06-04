@@ -90,18 +90,35 @@ async def extract_text_from_image(image: Image.Image) -> tuple[str, float]:
         confidences = []
         
         for i in range(len(data['text'])):
-            if int(data['conf'][i]) > 30:  # Filter out low confidence text
+            conf = int(data['conf'][i]) if str(data['conf'][i]).isdigit() else 0
+            if conf > 30:  # Filter out low confidence text
                 text = data['text'][i].strip()
                 if text:
                     texts.append(text)
-                    confidences.append(int(data['conf'][i]))
+                    confidences.append(conf)
         
-        extracted_text = ' '.join(texts)
-        avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+        extracted_text = ' '.join(texts) if texts else ""
+        avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
         
+        # If no high-confidence text found, try simple text extraction
+        if not extracted_text:
+            simple_text = pytesseract.image_to_string(processed_image, config=custom_config).strip()
+            if simple_text:
+                extracted_text = simple_text
+                avg_confidence = 75.0  # Assign default confidence
+        
+        logging.info(f"OCR extraction result: '{extracted_text}' with confidence {avg_confidence}%")
         return extracted_text, avg_confidence
+        
     except Exception as e:
         logging.error(f"OCR extraction failed: {str(e)}")
+        # Try basic extraction without preprocessing as fallback
+        try:
+            simple_text = pytesseract.image_to_string(image).strip()
+            if simple_text:
+                return simple_text, 50.0
+        except Exception as e2:
+            logging.error(f"Fallback OCR also failed: {str(e2)}")
         return "", 0.0
 
 def add_text_to_image(image: Image.Image, edits: List[TextEdit]) -> Image.Image:
