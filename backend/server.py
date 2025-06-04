@@ -56,21 +56,22 @@ class EditRequest(BaseModel):
 # Utility functions
 def preprocess_image(image):
     """Preprocess image for better OCR results"""
-    # Convert PIL to numpy array
-    img_array = np.array(image)
-    
-    # Convert to grayscale
-    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-    
-    # Apply threshold to get a binary image
-    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    
-    # Noise removal
-    kernel = np.ones((1, 1), np.uint8)
-    opening = cv2.morphologyEx(thresh, cv2.MORPH_OPENING, kernel, iterations=1)
-    
-    # Convert back to PIL Image
-    return Image.fromarray(opening)
+    try:
+        # Convert PIL to numpy array
+        img_array = np.array(image)
+        
+        # Convert to grayscale
+        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        
+        # Apply threshold to get a binary image
+        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        
+        # Convert back to PIL Image
+        return Image.fromarray(thresh)
+    except Exception as e:
+        logging.error(f"Image preprocessing failed: {str(e)}")
+        # Return original image if preprocessing fails
+        return image
 
 async def extract_text_from_image(image: Image.Image) -> tuple[str, float]:
     """Extract text from image using Tesseract OCR"""
